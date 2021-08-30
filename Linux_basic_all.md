@@ -408,11 +408,137 @@
 
 - 포어그라운드 프로세스와 백그라운드 프로세스
 
+  - 가장 큰 차이점 : 사용자와의 입력 연결 여부
+
   - 포어그라운드 프로세스
+
     - 쉘의 표준 입력이 연결된 프로세스
     - 쉘의 표준 입력이 연결된 프로세스
     - 사용자의 입력값이 주어질때까지 기다림 
+
   - 백그라운드 프로세스
+
     - 쉘의 표준 입력이 연결되지 않은 프로세스
     - 쉘의 표준 입력이 연결된 프로세스
     - 사용자의 입력은 필요하지 않고 알아서 돌리고 싶을 때 사용
+
+  - background 실행방법
+
+    -> ./process.sh & == 실행
+
+    -> fg를 입력 == foreground로 전환됨 -> ctrl + c 가능
+
+  - foreground 실행방법
+
+    -> ./process.sh == 실행
+
+    -> ctrl + z == 잠시 멈춤
+
+    -> bg를 입력 == background로 전환됨
+
+  - jobs == 현재 background로 실행되고 있는 프로세스를 확인시켜줌
+
+    -> ex) [1] ~, [2] ~ ...
+
+    -> %`<숫자>` fg == `<숫자>`에 해당되는 프로세스가 foreground로 전환됨
+
+- 데몬프로세스
+
+  - 보이지 않는 곳에서 스스로 일하고 있음
+  - 백그라운드 프로세스로 동작하기 위해 만들어진 프로세스
+  - 표준 스트림을 모두 갖고 시작하지만 모두 닫아버림 -> 쉘과의 입출력 교환 불가
+  - 부모 프로세스를 init프로세스로 변경
+
+- 시그널(signal)
+
+  - 비동기(asynchronous) 이벤트를 처리하기 위한 프로세스간 통신(inter process communication)
+  - 동기 vs 비동기
+  - 동기 : 다른 작업이 끝날 때까지 기다림
+  - 비동기 : 기다리지 않고 알아서 자신의 작업을 수행함
+  - ![signal](https://user-images.githubusercontent.com/73927750/131359491-511592fe-94d1-4d7e-9a7e-01c992b76a29.jpg)
+  - 주요 시그널
+    1. SIGCHLD - 자식프로세스 종료 - 무시
+    2. SIGINT - 사용자가 인터럽트 생성(ctrl + c) - 종료
+    3. SIGKILL - 종료 명령 - 종료
+    4. SIGTERM - 조건에 따른 종료 - 종료
+
+
+
+## 7. 리디렉션과 파이프라인
+
+- 출력 리디렉션 : >
+
+  - [n] > [filename]
+
+    -> ls > abc == abc라는 파일안에 ls의 출력물을 저장한다
+
+  - 대상 파일이 존재하는 경우 덮어쓴다
+
+  - noclobber설정 시 덮어쓰기 시도 시 에러 발생
+
+- 추가 모드 출력 리디렉션 : >>
+
+  - [n] >> [filename]
+
+    -> ls >> abc == abc파일에 덮어 쓰는 것이 아니라 뒤에 추가된다(append)
+
+  - 스트림을 대상 파일 끝에 추가 후 저장
+
+- 파일 디스크립터로 리디렉션 : >&
+
+  - [n] >& [FD]
+  - `>`와 동일하지만 대상 파일 대신 대상 파일 디스크립터로 지정
+  - 표준 출력관 표준 에러를 한꺼번에 출력하고 싶을 때 자주 사용
+
+- 표준 출력 및 표준 에러 동시 리디렉션 : &>
+
+  - & > word
+
+    -> ls &> result == ls에서 오류가 발생하더라도 표준출력처럼  result에 저장된다.
+
+  - 파일 디스크립터로 리디렉션보다 편리하게 사용가능
+
+- 입력 리디렉션 : <
+
+  - [n] < [filename]
+
+    -> wc(word count) < process.sh == wc에게 사용자가  < 후에 입력한 것처럼 내용을 전달한다
+
+- Here documents : <<
+
+  - [command] << [-]DELIM
+  - ... == < 처럼 file이 아닌 사용자가 직접 ... 영역안에 내용을 입력
+  - DELIM
+  - 프로그램 표준 입력으로 multi-line string 전달
+  - 코드블록의 내용이 임시 파일로 저장됐다가 프로그램의 표준 입력으로 리디렉션
+  - DELIM은 다른 단어로 변경가능(EOF, END)
+
+- Here strings : <<<
+
+  - [command] <<< word
+
+  - Here documents의 한 줄 버전
+
+    -> cat > hellotext <<< "Hello World" == "Hello World"가 cat으로 전달되어 출력되고 hellotext에 저장된다
+
+- 파이프라인(pipeline)
+
+  - 프로그램 간 상호작용
+
+  - program -> stdout -> 연결 -> stdin -> program
+
+  - ![pipeline](https://user-images.githubusercontent.com/73927750/131362702-fabb5958-8c84-472d-bc0d-dcd8d164afe4.jpg)
+
+  - 파이프라인 : |
+
+  - command1 [| command2] ... == command1의 표준출력이 command2의 표준입력으로 연결됨 + 추가적으로 더 연결해서 사용가능
+
+    -> cat process.sh | wc == process.sh의 출력결과가 wc의 입력으로 넘어옴
+
+  - command1 [|& command2] ... == command1의 표준출력과 표준에러가 command2의 표준입력으로 연결됨
+
+  - 전체 파이프라인의 exit status는 마지막 실행 커맨드의 exit status임
+
+  - pipefail 옵션이 설정되어 있다면 실패한 커맨드가 존재하면 실패로 처리됨 
+
+<출처> 내용정리와 사진은 ProgCoach4U님의 강의를 듣고 정리한 내용입니다.
